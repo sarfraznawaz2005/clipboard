@@ -1,0 +1,161 @@
+<Window x:Class="ClipboardApp.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Clipboard" Width="440" Height="640" MinWidth="360" MinHeight="420"
+        Icon="pack://application:,,,/Assets/app.ico"
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="58"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="32"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header: search + clear + settings -->
+        <Grid Grid.Row="0" Background="{StaticResource CardBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- The icon lives in its own fixed-width column so the text box never needs
+                 left padding to dodge it - that padding-vs-icon overlap was the source of a
+                 caret-position bug, so this layout avoids the whole class of it. -->
+            <Border Grid.Column="0" Height="36" Margin="16,0,8,0" VerticalAlignment="Center"
+                    Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush2}"
+                    BorderThickness="1" CornerRadius="8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="34"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Path Grid.Column="0" Data="{StaticResource IconSearch}" Fill="{StaticResource TextSecondaryBrush}"
+                          Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          IsHitTestVisible="False"/>
+
+                    <Grid Grid.Column="1">
+                        <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0" Padding="0,0,10,0"
+                                 VerticalContentAlignment="Center"
+                                 TextChanged="SearchBox_TextChanged" GotFocus="SearchBox_FocusChanged" LostFocus="SearchBox_FocusChanged"/>
+                        <TextBlock x:Name="SearchPlaceholder" Text="Search clipboard history"
+                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"
+                                   VerticalAlignment="Center" IsHitTestVisible="False"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Button Grid.Column="1" Style="{StaticResource IconButton}" Click="ClearHistory_Click"
+                    ToolTip="Clear history" Margin="0,0,2,0">
+                <Path Data="{StaticResource IconTrash}" Fill="{StaticResource TextSecondaryBrush}" Stretch="Uniform" Width="15" Height="15"/>
+            </Button>
+            <Button Grid.Column="2" Style="{StaticResource IconButton}" Click="Settings_Click"
+                    ToolTip="Settings" Margin="0,0,12,0">
+                <Path Data="{StaticResource IconGear}" Fill="{StaticResource TextSecondaryBrush}" Stretch="Uniform" Width="16" Height="16"/>
+            </Button>
+
+            <Border Grid.ColumnSpan="3" VerticalAlignment="Bottom" Height="1" Background="{StaticResource BorderBrush2}"/>
+        </Grid>
+
+        <!-- List -->
+        <Grid Grid.Row="1" Background="{StaticResource BgBrush}">
+            <ListBox x:Name="List" Margin="12,12,12,0" BorderThickness="0" Background="Transparent"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     PreviewMouseLeftButtonDown="List_PreviewMouseLeftButtonDown">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0,0,0,8"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="Bd" Background="{StaticResource CardBrush}"
+                                            BorderBrush="{StaticResource BorderBrush2}" BorderThickness="1"
+                                            CornerRadius="8" Padding="14,10">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardHoverBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentSoftBrush}"/>
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left" Margin="0,0,0,6"
+                                    Visibility="{Binding IsImage, Converter={StaticResource BoolToVis}}">
+                                <Image Source="{Binding ImageSource}" MaxHeight="90" MaxWidth="220" Stretch="Uniform"/>
+                            </Border>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Preview}" TextWrapping="NoWrap"
+                                       FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding FullText}"
+                                       Visibility="{Binding IsText, Converter={StaticResource BoolToVis}}"/>
+
+                            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,4,0,0">
+                                <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="4" Padding="6,1" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding KindLabel}" FontSize="10" FontWeight="SemiBold"
+                                               Foreground="{StaticResource AccentDarkBrush}"/>
+                                </Border>
+                                <TextBlock Text="{Binding TimeText}" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Orientation="Horizontal"
+                                        VerticalAlignment="Top" Margin="8,0,0,0">
+                                <Button Style="{StaticResource IconButton}" Click="Pin_Click" Tag="{Binding}" ToolTip="Pin">
+                                    <Path Data="{StaticResource IconPin}" Stretch="Uniform" Width="13" Height="13">
+                                        <Path.Style>
+                                            <Style TargetType="Path">
+                                                <Setter Property="Fill" Value="{StaticResource TextSecondaryBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                        <Setter Property="Fill" Value="{StaticResource PinBrush}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Path.Style>
+                                    </Path>
+                                </Button>
+                                <Button Style="{StaticResource IconButton}" Click="Delete_Click" Tag="{Binding}" ToolTip="Delete">
+                                    <Path Data="{StaticResource IconTrash}" Fill="{StaticResource TextSecondaryBrush}" Stretch="Uniform" Width="13" Height="13"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <TextBlock x:Name="EmptyText" Text="No clipboard history yet.&#10;Copy something to get started."
+                       Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       TextAlignment="Center" MaxWidth="260" Visibility="Collapsed"/>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,1,0,0">
+            <TextBlock x:Name="CountText" Margin="16,0,0,0" VerticalAlignment="Center" FontSize="11"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+        </Border>
+    </Grid>
+</Window>
