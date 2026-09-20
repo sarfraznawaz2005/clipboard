@@ -51,7 +51,14 @@ public partial class SettingsWindow : Window
         _settings.MinimizeToTray = MinimizeToTrayBox.IsChecked == true;
         _settings.CloseToTray = CloseToTrayBox.IsChecked == true;
 
+        // Debug builds must never touch the registry entry - Environment.ProcessPath in a
+        // `dotnet run` session points at the bin\Debug apphost, not the real published exe,
+        // so applying it here would silently overwrite (or delete) a real Start-with-Windows
+        // entry set up by the published build. The checkbox state still saves to settings.json
+        // either way; only the actual registry write is skipped.
+#if !DEBUG
         StartupRegistration.Apply(_settings.StartWithWindows);
+#endif
         Storage.SaveSettings(_settings);
 
         DialogResult = true;
