@@ -27,11 +27,15 @@ public sealed class ClipboardStore
         var existing = Entries.FirstOrDefault(e => ContentEquals(e, entry));
         if (existing is not null)
         {
-            // Re-copying something already in history bumps it to the top instead of
-            // cluttering the list with an identical second row.
+            // Re-copying something already in history - even as a different clipboard format
+            // (plain text immediately followed by HTML for the same copy) - bumps it to the
+            // top instead of cluttering the list with a second row for the same copy. Keep
+            // whichever format is richer rather than always keeping the older one.
             Entries.Remove(existing);
-            existing.CreatedAt = entry.CreatedAt;
-            Entries.Insert(0, existing);
+            var kept = Rank(entry.Kind) >= Rank(existing.Kind) ? entry : existing;
+            kept.CreatedAt = entry.CreatedAt;
+            kept.IsPinned = existing.IsPinned;
+            Entries.Insert(0, kept);
             SaveNow();
             return;
         }
@@ -87,20 +91,23 @@ public sealed class ClipboardStore
         }
     }
 
+    // Text, HTML and RTF entries are treated as the same copy when their plain-text fallback
+    // matches - that's what lets a Text+HTML pair from one copy collapse into a single row.
+    // Comparing image bytes isn't worth the cost here - re-copying the same image just adds
+    // a fresh row.
     static bool ContentEquals(ClipboardEntry a, ClipboardEntry b)
     {
-        if (a.Kind != b.Kind) return false;
-        return a.Kind switch
-        {
-            ClipboardEntryKind.Text => a.PlainText == b.PlainText,
-            ClipboardEntryKind.Html => a.Html == b.Html,
-            ClipboardEntryKind.Rtf => a.Rtf == b.Rtf,
-            // Comparing image bytes isn't worth the cost here - re-copying the same image
-            // just adds a fresh row.
-            ClipboardEntryKind.Image => false,
-            _ => false,
-        };
+        if (a.Kind == ClipboardEntryKind.Image || b.Kind == ClipboardEntryKind.Image) return false;
+        return !string.IsNullOrEmpty(a.PlainText) && a.PlainText == b.PlainText;
     }
+
+    static int Rank(ClipboardEntryKind kind) => kind switch
+    {
+        ClipboardEntryKind.Html => 2,
+        ClipboardEntryKind.Rtf => 2,
+        ClipboardEntryKind.Text => 1,
+        _ => 0,
+    };
 
     static void DeleteImageFile(ClipboardEntry e)
     {
