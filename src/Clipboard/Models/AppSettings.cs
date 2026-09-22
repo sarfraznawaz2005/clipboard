@@ -15,6 +15,10 @@ public sealed class AppSettings
 
     public int MaxEntries { get; set; } = 300;
 
+    // Deletes unpinned entries older than AutoClearDays. Off by default.
+    public bool AutoClearEnabled { get; set; }
+    public int AutoClearDays { get; set; } = 30;
+
     // Skips clipboard writes tagged "exclude from monitoring" - the convention password
     // managers (1Password, Bitwarden, KeePass, Windows' own credential UI) use to keep
     // copied secrets out of clipboard history tools.

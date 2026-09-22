@@ -9,6 +9,8 @@ public partial class SettingsWindow : Window
 {
     const int MinEntries = 10;
     const int MaxEntriesLimit = 5000;
+    const int MinAutoClearDays = 1;
+    const int MaxAutoClearDays = 3650;
 
     readonly AppSettings _settings;
 
@@ -27,6 +29,10 @@ public partial class SettingsWindow : Window
         AutoPasteBox.IsChecked = s.AutoPasteEnabled;
         IgnorePasswordManagerBox.IsChecked = s.IgnorePasswordManagerCopies;
 
+        AutoClearBox.IsChecked = s.AutoClearEnabled;
+        AutoClearDaysBox.Text = s.AutoClearDays.ToString();
+        AutoClearDaysBox.IsEnabled = s.AutoClearEnabled;
+
         StartWithWindowsBox.IsChecked = s.StartWithWindows;
         StartMinimizedBox.IsChecked = s.StartMinimized;
         MinimizeToTrayBox.IsChecked = s.MinimizeToTray;
@@ -35,6 +41,12 @@ public partial class SettingsWindow : Window
 
     void MaxEntriesBox_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
         e.Handled = !Regex.IsMatch(e.Text, "^[0-9]$");
+
+    void AutoClearDaysBox_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
+        e.Handled = !Regex.IsMatch(e.Text, "^[0-9]$");
+
+    void AutoClearBox_Toggled(object sender, RoutedEventArgs e) =>
+        AutoClearDaysBox.IsEnabled = AutoClearBox.IsChecked == true;
 
     void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
@@ -45,6 +57,10 @@ public partial class SettingsWindow : Window
 
         _settings.AutoPasteEnabled = AutoPasteBox.IsChecked == true;
         _settings.IgnorePasswordManagerCopies = IgnorePasswordManagerBox.IsChecked == true;
+
+        var autoClearDays = int.TryParse(AutoClearDaysBox.Text, out var d) ? d : _settings.AutoClearDays;
+        _settings.AutoClearEnabled = AutoClearBox.IsChecked == true;
+        _settings.AutoClearDays = Math.Clamp(autoClearDays, MinAutoClearDays, MaxAutoClearDays);
 
         _settings.StartWithWindows = StartWithWindowsBox.IsChecked == true;
         _settings.StartMinimized = StartMinimizedBox.IsChecked == true;

@@ -78,6 +78,25 @@ public sealed class ClipboardStore
         SaveNow();
     }
 
+    // Deletes unpinned entries older than AutoClearDays, when that setting is on. Called at
+    // startup, after Settings is saved, and on a recurring timer so a long-running instance
+    // still clears entries without needing a restart.
+    public void EnforceMaxAge()
+    {
+        if (!_settings.AutoClearEnabled) return;
+
+        var cutoff = DateTime.Now - TimeSpan.FromDays(Math.Max(0, _settings.AutoClearDays));
+        var expired = Entries.Where(e => !e.IsPinned && e.CreatedAt < cutoff).ToList();
+        if (expired.Count == 0) return;
+
+        foreach (var e in expired)
+        {
+            Entries.Remove(e);
+            DeleteImageFile(e);
+        }
+        SaveNow();
+    }
+
     void Trim()
     {
         var unpinned = Entries.Where(e => !e.IsPinned).ToList();

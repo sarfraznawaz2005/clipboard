@@ -25,7 +25,20 @@
         </Grid>
 
         <CheckBox x:Name="AutoPasteBox" Content="Auto-paste after selecting an item" Margin="0,0,0,10"/>
-        <CheckBox x:Name="IgnorePasswordManagerBox" Content="Ignore copies from password managers" Margin="0,0,0,18"/>
+        <CheckBox x:Name="IgnorePasswordManagerBox" Content="Ignore copies from password managers" Margin="0,0,0,10"/>
+
+        <CheckBox x:Name="AutoClearBox" Content="Auto-clear items older than" Margin="0,0,0,10"
+                  Checked="AutoClearBox_Toggled" Unchecked="AutoClearBox_Toggled"/>
+        <Grid Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="90"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Days to keep unpinned items" VerticalAlignment="Center" FontSize="13"
+                       Foreground="{StaticResource TextPrimaryBrush}"/>
+            <TextBox Grid.Column="1" x:Name="AutoClearDaysBox" HorizontalContentAlignment="Center"
+                     PreviewTextInput="AutoClearDaysBox_PreviewTextInput"/>
+        </Grid>
 
         <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,1,0,0" Margin="0,0,0,18"/>
 

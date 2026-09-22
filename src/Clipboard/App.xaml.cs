@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using ClipboardApp.Models;
 using ClipboardApp.Services;
 using ClipboardApp.Views;
@@ -16,6 +17,7 @@ public partial class App : System.Windows.Application
     GlobalHotkey? _hotkey;
     AppSettings? _settings;
     MainWindow? _mainWindow;
+    DispatcherTimer? _autoClearTimer;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -49,6 +51,14 @@ public partial class App : System.Windows.Application
         _settings = Storage.LoadSettings();
         _store = new ClipboardStore(_settings);
         _store.Load();
+        _store.EnforceMaxAge();
+
+        // Re-checks age-based clearing periodically so a long-running instance still clears
+        // old entries without needing a restart (the check on Settings save only covers the
+        // moment the setting changes).
+        _autoClearTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
+        _autoClearTimer.Tick += (_, _) => _store.EnforceMaxAge();
+        _autoClearTimer.Start();
 
         _monitor = new ClipboardMonitor(_settings);
         _monitor.EntryCaptured += entry => Dispatcher.Invoke(() => _store.AddNew(entry));
@@ -90,6 +100,7 @@ public partial class App : System.Windows.Application
     void ExitApplication()
     {
         IsExiting = true;
+        _autoClearTimer?.Stop();
         _mainWindow?.SavePlacement();
         _store?.SaveNow();
         _hotkey?.Dispose();

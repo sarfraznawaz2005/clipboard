@@ -244,7 +244,10 @@ public partial class MainWindow : Window
     {
         var settingsWindow = new SettingsWindow(_settings) { Owner = this };
         if (settingsWindow.ShowDialog() == true)
+        {
             _store.EnforceMaxEntries();
+            _store.EnforceMaxAge();
+        }
     }
 
     void Window_PreviewKeyDown(object sender, KeyEventArgs e)

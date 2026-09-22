@@ -6,6 +6,8 @@ A simple, clean, offline clipboard history manager for Windows, built with WPF o
 
 - Watches the clipboard and keeps a history of what you copy - text, HTML, rich text, and
   images. Default 300 items, configurable in Settings.
+- Auto-clear old items by age (e.g. delete anything older than 30 days). Off by default,
+  pinned items are never auto-cleared.
 - Ctrl+Shift+V opens the history popup from anywhere.
 - Click an entry (or select it with arrow keys + Enter) to copy it back. Auto-paste into the
   window you were just in is available as an opt-in setting - off by default.
