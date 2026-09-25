@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Clipboard" Width="440" Height="640" MinWidth="360" MinHeight="420"
         Icon="pack://application:,,,/Assets/app.ico"
+        ShowInTaskbar="False"
         PreviewKeyDown="Window_PreviewKeyDown">
     <Grid>
         <Grid.RowDefinitions>

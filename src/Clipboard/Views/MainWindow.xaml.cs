@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     readonly DispatcherTimer _relativeTimeTimer;
     string _search = "";
     IntPtr _previousForeground;
+    bool _childDialogOpen;
 
     public event Action? ExitRequested;
 
@@ -44,6 +45,7 @@ public partial class MainWindow : Window
 
         RestorePlacement();
         StateChanged += (_, _) => OnStateChangedHandler();
+        Deactivated += (_, _) => OnDeactivatedHandler();
         Closing += OnClosingHandler;
 
         _relativeTimeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
@@ -233,9 +235,12 @@ public partial class MainWindow : Window
     public void ClearHistoryFromTray()
     {
         const string message = "Clear all clipboard history? Pinned items will be kept.";
+
+        _childDialogOpen = true;
         var result = IsVisible
             ? MessageBox.Show(this, message, "Clear history", MessageBoxButton.YesNo, MessageBoxImage.Question)
             : MessageBox.Show(message, "Clear history", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        _childDialogOpen = false;
 
         if (result == MessageBoxResult.Yes) _store.ClearHistory();
     }
@@ -243,7 +248,12 @@ public partial class MainWindow : Window
     void Settings_Click(object sender, RoutedEventArgs e)
     {
         var settingsWindow = new SettingsWindow(_settings) { Owner = this };
-        if (settingsWindow.ShowDialog() == true)
+
+        _childDialogOpen = true;
+        var saved = settingsWindow.ShowDialog() == true;
+        _childDialogOpen = false;
+
+        if (saved)
         {
             _store.EnforceMaxEntries();
             _store.EnforceMaxAge();
@@ -298,13 +308,11 @@ public partial class MainWindow : Window
 
         Left = -32000;
         Top = -32000;
-        ShowInTaskbar = false;
         Show();
         Hide();
 
         Left = realLeft;
         Top = realTop;
-        ShowInTaskbar = true;
     }
 
     public void ShowAndActivate()
@@ -336,6 +344,15 @@ public partial class MainWindow : Window
     {
         if (WindowState == WindowState.Minimized && _settings.MinimizeToTray)
             Hide();
+    }
+
+    // Clicking outside the popup closes it to the tray, like Windows' own clipboard history
+    // (Win+V). Guarded by _childDialogOpen so opening Settings, or the clear-history confirm,
+    // doesn't hide this window out from under its own owned dialog.
+    void OnDeactivatedHandler()
+    {
+        if (_childDialogOpen || !IsVisible) return;
+        Hide();
     }
 
     void OnClosingHandler(object? sender, System.ComponentModel.CancelEventArgs e)
