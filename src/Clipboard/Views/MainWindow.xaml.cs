@@ -329,6 +329,13 @@ public partial class MainWindow : Window
         Topmost = true;
         Topmost = false;
 
+        // Always reopen at the top of the list, not wherever it was last scrolled to.
+        if (_rows.Count > 0)
+        {
+            List.SelectedIndex = 0;
+            List.ScrollIntoView(_rows[0]);
+        }
+
         SearchBox.Focus();
         SearchBox.SelectAll();
 
